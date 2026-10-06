@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,12 +8,18 @@ version = "0.1.0"
 description = "Setup checks for stale-data RL comparisons in language models"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{name = "Taiheng Pan"}]
-keywords = ["reinforcement learning", "language models", "off-policy", "verl", "reproducibility"]
+keywords = ["reinforcement learning", "language models", "off-policy", "ppo", "grpo", "verl", "reproducibility"]
 classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = ["numpy>=1.21"]
@@ -23,6 +29,13 @@ torch = ["torch>=2.0"]
 yaml = ["pyyaml>=5.4"]
 all = ["torch>=2.0", "pyyaml>=5.4"]
 test = ["pytest>=7"]
+
+[project.urls]
+Homepage = "https://github.com/pth2002/probe-the-harness"
+Repository = "https://github.com/pth2002/probe-the-harness"
+Paper = "https://arxiv.org/abs/2610.02911"
+Checklist = "https://github.com/pth2002/probe-the-harness/blob/main/CHECKLIST.md"
+Issues = "https://github.com/pth2002/probe-the-harness/issues"
 
 [project.scripts]
 pth = "pth.cli:main"

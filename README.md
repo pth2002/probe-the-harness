@@ -1,13 +1,14 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/hero-dark.svg">
-  <img alt="Probe the Harness: setup checks for stale-data RL comparisons in language models" src="assets/hero-light.svg" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/pth2002/probe-the-harness/main/assets/hero-dark.svg">
+  <img alt="Probe the Harness: setup checks for stale-data RL comparisons in language models" src="https://raw.githubusercontent.com/pth2002/probe-the-harness/main/assets/hero-light.svg" width="100%">
 </picture>
 
 <p align="center">
   <a href="https://arxiv.org/abs/2610.02911"><img alt="arXiv 2610.02911" src="https://img.shields.io/badge/arXiv-2610.02911-b31b1b.svg"></a>
+  <a href="https://pypi.org/project/probe-the-harness/"><img alt="PyPI" src="https://img.shields.io/pypi/v/probe-the-harness.svg"></a>
   <a href="https://github.com/pth2002/probe-the-harness/actions/workflows/tests.yml"><img alt="tests" src="https://github.com/pth2002/probe-the-harness/actions/workflows/tests.yml/badge.svg"></a>
   <img alt="Python 3.9+" src="https://img.shields.io/badge/python-3.9%2B-3776ab.svg">
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
+  <a href="https://github.com/pth2002/probe-the-harness/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
 </p>
 
 <h3 align="center">Clip fraction 0.000. Sampler drift 10,000×. Your logs called it a calm run.</h3>
@@ -16,7 +17,7 @@
   <a href="#quick-start">Quick start</a> &nbsp;·&nbsp;
   <a href="#four-layers-four-checks">Four layers</a> &nbsp;·&nbsp;
   <a href="#python-api">Python API</a> &nbsp;·&nbsp;
-  <a href="CHECKLIST.md">Checklist</a> &nbsp;·&nbsp;
+  <a href="https://github.com/pth2002/probe-the-harness/blob/main/CHECKLIST.md">Checklist</a> &nbsp;·&nbsp;
   <a href="#reference-results-on-verl">Reference results</a> &nbsp;·&nbsp;
   <a href="#citation">Citation</a>
 </p>
@@ -33,8 +34,8 @@ With the harness checked, the clean sweep on verl became a tie. **PTH turns thos
 ## A log that looked right
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/signal-dark.svg">
-  <img alt="Sampler to learner KL grows by four orders of magnitude while the PPO clip fraction stays at zero" src="assets/signal-light.svg" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/pth2002/probe-the-harness/main/assets/signal-dark.svg">
+  <img alt="Sampler to learner KL grows by four orders of magnitude while the PPO clip fraction stays at zero" src="https://raw.githubusercontent.com/pth2002/probe-the-harness/main/assets/signal-light.svg" width="100%">
 </picture>
 
 Here is the Idle Clip in a real verl run. The PPO arm logged a clip fraction of 0.000 on every update, which reads like a calm, healthy run. Over the same updates the sampler drifted four orders of magnitude away from the learner. The ratio was taken against the learner's own recomputed probabilities, so the clip had nothing to act on and the arm trained with no off-policy correction at all. **PTH check 1 spots this from a single verl console log.**
@@ -44,7 +45,7 @@ Here is the Idle Clip in a real verl run. The PPO arm logged a clip fraction of 
 **Check your last run in one command.**
 
 ```bash
-pip install git+https://github.com/pth2002/probe-the-harness
+pip install probe-the-harness
 pth verl path/to/run.log
 ```
 
@@ -55,31 +56,31 @@ pth verl --arm "grpo=logs/grpo-*.txt" --arm "tis=logs/tis-*.txt" \
          --vary algorithm.rollout_correction.rollout_is -q
 ```
 
-<img alt="pth verl output on six verl logs" src="assets/terminal.svg" width="100%">
+<img alt="pth verl output on six verl logs" src="https://raw.githubusercontent.com/pth2002/probe-the-harness/main/assets/terminal.svg" width="100%">
 
 Six console logs from the report, one command, two of the four caught in plain sight: the Idle Clip in every GRPO run and the Lost Seed in the TIS arm. `pth` exits with status 1 whenever a check fails, so it can stand guard over a results table in CI.
 
 The core needs only numpy and Python 3.9 or newer. For check 4 (PyTorch) and YAML configs:
 
 ```bash
-pip install "probe-the-harness[all] @ git+https://github.com/pth2002/probe-the-harness"
+pip install "probe-the-harness[all]"
 ```
 
-The verl reader needs `trainer.logger` to include `console` and `actor_rollout_ref.rollout.calculate_log_probs=True`. [docs/verl.md](docs/verl.md) shows how to run check 1 inside the update and how to save configurations and data orders for check 2.
+The verl reader needs `trainer.logger` to include `console` and `actor_rollout_ref.rollout.calculate_log_probs=True`. [docs/verl.md](https://github.com/pth2002/probe-the-harness/blob/main/docs/verl.md) shows how to run check 1 inside the update and how to save configurations and data orders for check 2.
 
 ## Four layers, four checks
 
 Every layer of a harness has a quantity that everyone logs and a quantity that actually decides the comparison. PTH measures the second one and calls out what it finds by name.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/layers-dark.svg">
-  <img alt="Four layers of a stale-data harness: what the logs showed and what defines the comparison" src="assets/layers-light.svg" width="100%">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/pth2002/probe-the-harness/main/assets/layers-dark.svg">
+  <img alt="Four layers of a stale-data harness: what the logs showed and what defines the comparison" src="https://raw.githubusercontent.com/pth2002/probe-the-harness/main/assets/layers-light.svg" width="100%">
 </picture>
 
 > [!TIP]
 > **One principle.** For every layer of the harness, measure the quantity that defines the comparison, alongside the quantities that are convenient to log.
 
-Checks 5 to 7 carry the same principle to the comparison as a whole: map each baseline's stable range, report paired differences per seed, and review code and logs against each claim. [CHECKLIST.md](CHECKLIST.md) lists all seven with the signal each one looks for.
+Checks 5 to 7 carry the same principle to the comparison as a whole: map each baseline's stable range, report paired differences per seed, and review code and logs against each claim. [CHECKLIST.md](https://github.com/pth2002/probe-the-harness/blob/main/CHECKLIST.md) lists all seven with the signal each one looks for.
 
 ## Python API
 
