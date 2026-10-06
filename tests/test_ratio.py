@@ -16,6 +16,7 @@ def test_ratio_against_recomputed_policy_fails_under_lag():
     logp, logq, mask = _batch()
     rep = ratio_report(logp, logq, mask, logp_old=logp.copy())
     assert not rep.ok
+    assert rep.by_level("fail")[0].tag == "Idle Clip"
     assert rep.stats["ratio_to_old"]["max_abs_log_ratio"] == 0.0
     assert rep.stats["ratio_to_sampler"]["outside_clip_range"] > 0.5
 
@@ -48,6 +49,7 @@ def test_scan_flags_zero_clip_under_lag():
     kl = {s: 1e-3 * (1.1 ** s) for s in steps}
     rep = scan_clip_vs_kl(clip, kl)
     assert not rep.ok
+    assert "(Idle Clip)" in rep.format()
     assert rep.stats["max_clip_fraction"] == 0.0
 
 

@@ -37,7 +37,7 @@ if rollout_log_prob is not None:
     micro_batch_metrics["pth/ratio_to_old_max_abs_log"] = rep.stats["ratio_to_old"]["max_abs_log_ratio"]
 ```
 
-`pth/ratio_to_old_max_abs_log` at zero next to a growing `pth/kl_sampler_to_old` is the signature of check 1. File and variable names follow verl releases from late 2025 and may move between versions.
+`pth/ratio_to_old_max_abs_log` at zero next to a growing `pth/kl_sampler_to_old` is the signature of the Idle Clip. File and variable names follow verl releases from late 2025 and may move between versions.
 
 ## Configurations and data orders for check 2
 

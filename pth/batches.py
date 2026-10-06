@@ -11,7 +11,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 
 import numpy as np
 
-from .report import Report
+from .report import STUCK_BATCH, Report
 
 
 def batch_fingerprint(*parts: Any) -> str:
@@ -122,7 +122,7 @@ def check_batch_ids(
             detail.append("The logged data age does not reveal this, since a repeated batch can carry any age.")
         verb = "reuses" if n - distinct == 1 else "reuse"
         rep.add(3, "fail", f"{n - distinct} of {n} updates {verb} an earlier batch", " ".join(detail),
-                first_repeat_update=min(us[1] for us in repeated.values()))
+                tag=STUCK_BATCH, first_repeat_update=min(us[1] for us in repeated.values()))
     else:
         rep.add(3, "info", f"{n} updates, {distinct} distinct batches")
 

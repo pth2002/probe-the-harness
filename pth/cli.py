@@ -121,7 +121,7 @@ def build_parser() -> argparse.ArgumentParser:
     v = sub.add_parser("verl", help="checks 1 and 2 on verl console logs")
     v.add_argument("logs", nargs="*", help="verl console logs")
     v.add_argument("--arm", action="append", default=[], metavar="NAME=GLOB",
-                   help="assign logs to an arm (repeat per arm); enables check 2 across arms")
+                   help="assign logs to an arm, once per arm, to add check 2 across arms")
     v.add_argument("--vary", action="append", default=[], metavar="KEY",
                    help="config field the comparison varies between arms (repeatable)")
     v.add_argument("--replicate", action="append", default=None, metavar="KEY",

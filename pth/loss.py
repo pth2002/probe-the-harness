@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, Mapping, Optional, Sequence
 
-from .report import Report
+from .report import ROGUE_NORMALISER, Report
 
 
 def _torch():
@@ -55,14 +55,15 @@ def random_batch(
     }
 
 
-def _scale_diagnosis(torch, g_impl, g_eq, tol: float = 1e-6) -> str:
+def _scale_diagnosis(torch, g_impl, g_eq, tol: float = 1e-6):
+    """Describe how two gradients differ. Returns (text, per-sequence normaliser found)."""
     a, b = g_impl.reshape(-1), g_eq.reshape(-1)
     na, nb = a.norm(), b.norm()
     if nb == 0 or na == 0:
-        return "One of the two gradients is zero."
+        return "One of the two gradients is zero.", False
     cos = float(a @ b / (na * nb))
     if cos > 1 - tol:
-        return f"The gradients point the same way and differ by a global factor {float(na / nb):.6g}."
+        return f"The gradients point the same way and differ by a global factor {float(na / nb):.6g}.", False
     if g_impl.dim() >= 2:
         rows_a = g_impl.reshape(g_impl.shape[0], -1)
         rows_b = g_eq.reshape(g_eq.shape[0], -1)
@@ -75,8 +76,8 @@ def _scale_diagnosis(torch, g_impl, g_eq, tol: float = 1e-6) -> str:
                 return (
                     f"Within every sequence the gradients point the same way, with a per-sequence factor between "
                     f"{float(scale.min()):.4g} and {float(scale.max()):.4g}. The two differ in a normaliser."
-                )
-    return f"Cosine similarity between the gradients is {cos:.4f}."
+                ), True
+    return f"Cosine similarity between the gradients is {cos:.4f}.", False
 
 
 def check_loss(
@@ -133,8 +134,9 @@ def check_loss(
         rep.stats[f"max_grad_diff[{k}]"] = diff
         if not torch.allclose(a, b, rtol=rtol, atol=atol):
             all_ok = False
+            text, normaliser = _scale_diagnosis(torch, a, b)
             rep.add(4, "fail", f"{name}: gradient with respect to {k} differs from the equation",
-                    f"max abs difference {diff:.3g}. " + _scale_diagnosis(torch, a, b))
+                    f"max abs difference {diff:.3g}. " + text, tag=ROGUE_NORMALISER if normaliser else "")
     if all_ok:
         rep.add(4, "info", f"{name}: value and gradient match the equation",
                 f"value {float(v_impl):.8g}, gradients with respect to {', '.join(wrt)}")

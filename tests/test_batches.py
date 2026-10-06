@@ -17,6 +17,7 @@ def test_warmup_queue_reproduces_report_numbers():
     assert rep.stats["distinct_batches"] == 68
     assert rep.stats["longest_repeat"] == 33
     assert [f.level for f in rep.findings] == ["fail", "info"]  # identity fails, age passes
+    assert rep.findings[0].tag == "Stuck Batch"
 
 
 def test_unique_prefill_passes_with_same_ages():

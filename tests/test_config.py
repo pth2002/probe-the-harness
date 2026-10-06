@@ -34,6 +34,7 @@ def test_seed_that_never_reached_one_arm():
     titles = [f.title for f in rep.by_level("fail")]
     assert any("arm 'tis': 3 runs share data.seed" in t for t in titles)
     assert any("different sets of data.seed" in t for t in titles)
+    assert {f.tag for f in rep.by_level("fail")} == {"Lost Seed"}
     assert not rep.by_level("warn")  # experiment names are ignored by default
 
 

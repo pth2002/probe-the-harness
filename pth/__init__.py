@@ -10,8 +10,11 @@ comparison alongside the quantities that are convenient to log.
     check 6  paired_differences                paired differences per seed
 
 Checks 5 and 7 are procedures, described in CHECKLIST.md.
+
+Findings that match one of the four details from the report carry its name in
+``finding.tag``: IDLE_CLIP, LOST_SEED, STUCK_BATCH or ROGUE_NORMALISER.
 """
-from .report import Finding, HarnessCheckError, Report
+from .report import IDLE_CLIP, LOST_SEED, ROGUE_NORMALISER, STUCK_BATCH, Finding, HarnessCheckError, Report
 from .ratio import ratio_report, scan_clip_vs_kl
 from .config import check_arms, check_data_orders, data_order_fingerprint, flatten, load_config
 from .batches import BatchLedger, batch_fingerprint, check_batch_ids
@@ -29,6 +32,7 @@ __version__ = "0.1.0"
 
 __all__ = [
     "Finding", "HarnessCheckError", "Report",
+    "IDLE_CLIP", "LOST_SEED", "STUCK_BATCH", "ROGUE_NORMALISER",
     "ratio_report", "scan_clip_vs_kl",
     "check_arms", "check_data_orders", "data_order_fingerprint", "flatten", "load_config",
     "BatchLedger", "batch_fingerprint", "check_batch_ids",

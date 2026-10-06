@@ -10,6 +10,8 @@
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
 </p>
 
+<h3 align="center">Clip fraction 0.000. Sampler drift 10,000×. Your logs called it a calm run.</h3>
+
 <p align="center">
   <a href="#quick-start">Quick start</a> &nbsp;·&nbsp;
   <a href="#four-layers-four-checks">Four layers</a> &nbsp;·&nbsp;
@@ -19,7 +21,14 @@
   <a href="#citation">Citation</a>
 </p>
 
-Every comparison between RL methods runs inside a harness: the code that delays the sampler, assembles each arm's configuration, selects the data for each update and computes each loss. **PTH** makes that harness visible, so a comparison measures the methods it names. It grew out of a case in which four details of the harness reversed the observed ranking of two methods, and each of them sat behind a log that looked right.
+A new method beat its importance-corrected baseline in every setting we ran. Then we probed the harness, the code that delays the sampler, builds each arm's configuration, picks the data for each update and computes each loss. Four details had shaped the result, and every one of them hid behind a log that looked fine.
+
+- **The Idle Clip.** The PPO ratio pointed at the learner's own recomputed policy, so the clip never fired.
+- **The Lost Seed.** The data seed never reached one arm, so its three runs replayed one data order.
+- **The Stuck Batch.** A replay queue served its first batch for 33 updates in a row.
+- **The Rogue Normaliser.** A loss divided by a different normaliser than its equation.
+
+With the harness checked, the clean sweep on verl became a tie. **PTH turns those four lessons into checks you can run on your own comparison.** Two of them read the verl logs you already have. The other two take one line of logging or one short test.
 
 ## A log that looked right
 
@@ -28,18 +37,27 @@ Every comparison between RL methods runs inside a harness: the code that delays 
   <img alt="Sampler to learner KL grows by four orders of magnitude while the PPO clip fraction stays at zero" src="assets/signal-light.svg" width="100%">
 </picture>
 
-This PPO arm logged a clip fraction of 0.000 on every update, which reads like a calm run. Over the same updates the sampler drifted from the learner by four orders of magnitude. The ratio in the loss was taken against the learner's own recomputed probabilities, so the clip had nothing to act on and the arm trained without off-policy correction. PTH check 1 reads both series from a verl console log and names the cause.
+Here is the Idle Clip in a real verl run. The PPO arm logged a clip fraction of 0.000 on every update, which reads like a calm, healthy run. Over the same updates the sampler drifted four orders of magnitude away from the learner. The ratio was taken against the learner's own recomputed probabilities, so the clip had nothing to act on and the arm trained with no off-policy correction at all. **PTH check 1 spots this from a single verl console log.**
 
 ## Quick start
 
+**Check your last run in one command.**
+
 ```bash
 pip install git+https://github.com/pth2002/probe-the-harness
-pth verl --arm "grpo=logs/grpo-*.txt" --arm "tis=logs/tis-*.txt" -q
+pth verl path/to/run.log
+```
+
+To compare arms, tell `pth` which run belongs to which arm:
+
+```bash
+pth verl --arm "grpo=logs/grpo-*.txt" --arm "tis=logs/tis-*.txt" \
+         --vary algorithm.rollout_correction.rollout_is -q
 ```
 
 <img alt="pth verl output on six verl logs" src="assets/terminal.svg" width="100%">
 
-Six verl console logs from the report, two arms. Check 1 finds the inactive clip in every GRPO run. Check 2 finds that the data seed never reached the TIS arm, whose three runs repeated one data order. `pth` exits with status 1 when any check fails, so it can guard a results table in CI.
+Six console logs from the report, one command, two of the four caught in plain sight: the Idle Clip in every GRPO run and the Lost Seed in the TIS arm. `pth` exits with status 1 whenever a check fails, so it can stand guard over a results table in CI.
 
 The core needs only numpy and Python 3.9 or newer. For check 4 (PyTorch) and YAML configs:
 
@@ -50,6 +68,8 @@ pip install "probe-the-harness[all] @ git+https://github.com/pth2002/probe-the-h
 The verl reader needs `trainer.logger` to include `console` and `actor_rollout_ref.rollout.calculate_log_probs=True`. [docs/verl.md](docs/verl.md) shows how to run check 1 inside the update and how to save configurations and data orders for check 2.
 
 ## Four layers, four checks
+
+Every layer of a harness has a quantity that everyone logs and a quantity that actually decides the comparison. PTH measures the second one and calls out what it finds by name.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/layers-dark.svg">
@@ -63,7 +83,7 @@ Checks 5 to 7 carry the same principle to the comparison as a whole: map each ba
 
 ## Python API
 
-Every check returns a `Report`: findings at three levels (`fail`, `warn`, `info`) plus the statistics behind them. `report.ok` is false when any finding fails, and `report.raise_on_fail()` turns that into an exception.
+Every check returns a `Report`: findings at three levels (`fail`, `warn`, `info`) plus the statistics behind them. `report.ok` is false when any finding fails, and `report.raise_on_fail()` turns that into an exception. A finding that matches one of the four carries its name in `finding.tag`: `pth.IDLE_CLIP`, `pth.LOST_SEED`, `pth.STUCK_BATCH` or `pth.ROGUE_NORMALISER`.
 
 <details>
 <summary><b>Check 1</b> &nbsp; policy in the PPO ratio</summary>
@@ -109,7 +129,7 @@ print(ledger.report(expected_age=lambda u: min(u, k)))
 
 ```text
 check 3: data for each update
-  [FAIL] check 3: 32 of 100 updates reuse an earlier batch
+  [FAIL] check 3 (Stuck Batch): 32 of 100 updates reuse an earlier batch
          100 updates trained on 68 distinct batches. Updates 0 to 32 all trained on one batch ...
   [INFO] check 3: data age follows the design on every update
 ```
@@ -123,7 +143,7 @@ rep = pth.check_loss(my_loss, written_equation, pth.random_batch(), wrt=["logp"]
 ```
 
 ```text
-  [FAIL] check 4: loss: gradient with respect to logp differs from the equation
+  [FAIL] check 4 (Rogue Normaliser): loss: gradient with respect to logp differs from the equation
          max abs difference 0.017. Within every sequence the gradients point the same way, with a
          per-sequence factor between 0.6897 and 1.379. The two differ in a normaliser.
 ```
@@ -155,7 +175,11 @@ Correctly configured TIS and uncorrected GRPO under sampler lag, from the report
 | Uncorrected GRPO | .743 | .778 | .777 | .114 | .280 | .099 |
 | TIS | .763 | .785 | .808 | .764 | .781 | .785 |
 
-TIS uses `algorithm.rollout_correction.rollout_is=token` with `rollout_is_threshold=2.0`, which multiplies the loss by the detached weight min(pi_old / q, 2) with q the sampler's recorded probability. It stays stable over all 100 updates at both intervals. The uncorrected arm is verl's PPO loss with `ppo_epochs=1` and one mini-batch per batch, where the ratio is 1 and the clip cannot act.
+TIS uses `algorithm.rollout_correction.rollout_is=token` with `rollout_is_threshold=2.0`, which multiplies the loss by the detached weight min(pi_old / q, 2) with q the sampler's recorded probability. It stays stable over all 100 updates at both intervals. The uncorrected arm is verl's PPO loss with `ppo_epochs=1` and one mini-batch per batch, where the ratio is 1 and the clip cannot act. Use these numbers as a yardstick: if your own TIS baseline falls apart in this setting, run checks 1 to 4 before you blame the method.
+
+## Probe your harness before a reviewer does
+
+Run `pth verl` on the logs behind your next results table. If it stays quiet, ship the table. If it names an Idle Clip or a Lost Seed, you just saved yourself a rebuttal.
 
 ## Development
 

@@ -23,6 +23,7 @@ def test_normaliser_mismatch_is_diagnosed():
     assert not rep.ok
     grad = [f for f in rep.by_level("fail") if "gradient" in f.title]
     assert grad and "normaliser" in grad[0].detail
+    assert grad[0].tag == "Rogue Normaliser"
 
 
 def test_matching_loss_passes():
@@ -39,6 +40,7 @@ def test_global_scale_is_diagnosed():
 
     rep = check_loss(impl, eq, random_batch())
     assert "global factor 0.5" in rep.by_level("fail")[-1].detail
+    assert rep.by_level("fail")[-1].tag == ""
 
 
 def test_wrong_direction():

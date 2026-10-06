@@ -16,10 +16,10 @@ Checks 1 to 4 apply the principle to the four layers of a stale-data harness. Ch
 
 ## How each check caught a detail in the report
 
-1. verl recomputes pi_old with the learner unless bypass mode is on. With one epoch and one mini-batch per batch, the ratio is 1 on every token. Across all 21 lagged baseline runs, the clip fraction was zero on every update while the sampler-learner KL reached 7 to 9 nats per token at refresh interval 96.
-2. The launch script appended the data seed to a variable and then, when importance sampling was enabled, assigned a new string to the same variable. The three TIS runs repeated one data order.
-3. The replay queue trained on the oldest batch available until it held k + 1 batches. At replay age 32, the first 33 updates used batch 0, and 100 updates used 68 distinct batches, with the data age on schedule throughout.
-4. Two loss variants divided by a different normaliser than the one written for them. Both trained normally.
+1. **The Idle Clip.** verl recomputes pi_old with the learner unless bypass mode is on. With one epoch and one mini-batch per batch, the ratio is 1 on every token. Across all 21 lagged baseline runs, the clip fraction was zero on every update while the sampler-learner KL reached 7 to 9 nats per token at refresh interval 96.
+2. **The Lost Seed.** The launch script appended the data seed to a variable and then, when importance sampling was enabled, assigned a new string to the same variable. The three TIS runs repeated one data order.
+3. **The Stuck Batch.** The replay queue trained on the oldest batch available until it held k + 1 batches. At replay age 32, the first 33 updates used batch 0, and 100 updates used 68 distinct batches, with the data age on schedule throughout.
+4. **The Rogue Normaliser.** Two loss variants divided by a different normaliser than the one written for them. Both trained normally.
 
 ## A review template for check 7
 

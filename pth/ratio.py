@@ -14,7 +14,7 @@ from typing import Any, Mapping, Optional
 import numpy as np
 
 from ._arrays import masked
-from .report import Report
+from .report import IDLE_CLIP, Report
 
 _QUANTILES = (0.01, 0.1, 0.5, 0.9, 0.99)
 
@@ -98,6 +98,7 @@ def ratio_report(
             f"cannot act. Against the sampler, {to_sampler['outside_clip_range']:.1%} of tokens fall outside "
             "the clip range. Take pi_old from the sampler's recorded probabilities or add an importance weight "
             "against them.",
+            tag=IDLE_CLIP,
             kl=kl,
         )
     elif lagging and to_old["outside_clip_range"] < 0.1 * max(to_sampler["outside_clip_range"], 1e-12):
@@ -171,6 +172,7 @@ def scan_clip_vs_kl(
             "taken against a recomputed policy, which leaves the arm without off-policy correction unless the "
             "loss also applies an importance weight against the sampler. The source of pi_old in the code "
             "settles it.",
+            tag=IDLE_CLIP,
             first_lagging_update=lag_steps[0],
         )
     else:

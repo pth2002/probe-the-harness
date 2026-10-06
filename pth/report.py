@@ -7,6 +7,12 @@ from typing import Any, Dict, Iterable, List
 LEVELS = ("fail", "warn", "info")
 _LEVEL_COLORS = {"fail": "1;31", "warn": "33", "info": "36"}
 
+# The four harness details from the report, named after what they look like in a run.
+IDLE_CLIP = "Idle Clip"                # check 1: PPO ratio taken against a recomputed policy
+LOST_SEED = "Lost Seed"                # check 2: a data seed that never reached an arm
+STUCK_BATCH = "Stuck Batch"            # check 3: updates that keep training on one batch
+ROGUE_NORMALISER = "Rogue Normaliser"  # check 4: a loss normaliser that differs from its equation
+
 
 @dataclass
 class Finding:
@@ -14,7 +20,8 @@ class Finding:
 
     ``level`` is ``"fail"`` when the defining quantity contradicts the intended
     setup, ``"warn"`` when the setup cannot be confirmed from what was given, and
-    ``"info"`` for measurements worth keeping next to the results.
+    ``"info"`` for measurements worth keeping next to the results. ``tag``
+    names the harness detail a finding matches, when it matches one exactly.
     """
 
     check: int
@@ -22,6 +29,7 @@ class Finding:
     title: str
     detail: str = ""
     evidence: Dict[str, Any] = field(default_factory=dict)
+    tag: str = ""
 
     def __post_init__(self) -> None:
         if self.level not in LEVELS:
@@ -36,15 +44,15 @@ class Report:
     stats: Dict[str, Any] = field(default_factory=dict)
     subject: str = ""
 
-    def add(self, check: int, level: str, title: str, detail: str = "", **evidence: Any) -> Finding:
-        f = Finding(check, level, title, detail, dict(evidence))
+    def add(self, check: int, level: str, title: str, detail: str = "", tag: str = "", **evidence: Any) -> Finding:
+        f = Finding(check, level, title, detail, dict(evidence), tag)
         self.findings.append(f)
         return f
 
     def extend(self, other: "Report", prefix: str = "") -> "Report":
         for f in other.findings:
             title = f"{prefix}{f.title}" if prefix else f.title
-            self.findings.append(Finding(f.check, f.level, title, f.detail, dict(f.evidence)))
+            self.findings.append(Finding(f.check, f.level, title, f.detail, dict(f.evidence), f.tag))
         if other.stats:
             key = prefix.rstrip(": ") or other.subject or f"part{len(self.stats)}"
             self.stats[key] = other.stats
@@ -77,7 +85,8 @@ class Report:
             if f.level not in wanted:
                 continue
             tag = paint(f"[{f.level.upper():4}]", _LEVEL_COLORS[f.level])
-            lines.append(f"  {tag} check {f.check}: {f.title}")
+            name = f" ({paint(f.tag, '1')})" if f.tag else ""
+            lines.append(f"  {tag} check {f.check}{name}: {f.title}")
             if f.detail:
                 for chunk in f.detail.splitlines():
                     lines.append(paint(f"         {chunk}", "2"))

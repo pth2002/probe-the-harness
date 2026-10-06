@@ -14,7 +14,7 @@ import json
 from collections import defaultdict
 from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Sequence, Union
 
-from .report import Report
+from .report import LOST_SEED, Report
 
 DEFAULT_IGNORE = (
     "trainer.experiment_name",
@@ -112,20 +112,22 @@ def check_arms(
                 for n, v in zip(sorted(names), values):
                     counts[repr(v)].append(n)
                 shared = {v: ns for v, ns in counts.items() if len(ns) > 1}
-                desc = "; ".join(f"{key}={v} in {', '.join(ns)}" for v, ns in shared.items())
+                desc = " | ".join(f"{key}={v} in {', '.join(ns)}" for v, ns in shared.items())
                 rep.add(
                     2, "fail",
                     f"arm '{arm}': {sum(len(ns) for ns in shared.values())} runs share {key}",
                     f"{desc}. These runs repeat one data order, so their spread measures sampling noise only.",
+                    tag=LOST_SEED if "seed" in key.lower() else "",
                     arm=arm, key=key,
                 )
         value_sets = {arm: frozenset(map(repr, vs)) for arm, vs in per_arm.items()}
         if len(set(value_sets.values())) > 1:
-            desc = "; ".join(f"{arm}: {sorted(vs)}" for arm, vs in sorted(value_sets.items()))
+            desc = " | ".join(f"{arm}: {sorted(vs)}" for arm, vs in sorted(value_sets.items()))
             rep.add(
                 2, "fail",
                 f"arms use different sets of {key}",
                 f"{desc}. Results cannot be paired by {key} across these arms.",
+                tag=LOST_SEED if "seed" in key.lower() else "",
                 key=key,
             )
         rep.stats.setdefault("replicates", {})[key] = {a: [repr(v) for v in vs] for a, vs in per_arm.items()}
@@ -138,7 +140,7 @@ def check_arms(
                     f"Every arm has {reps[next(iter(reps))]}. The setting did not reach the runs.", key=key)
         else:
             rep.add(2, "info", f"{key} varies as declared",
-                    "; ".join(f"{a}: {', '.join(v)}" for a, v in sorted(reps.items())))
+                    " | ".join(f"{a}: {', '.join(v)}" for a, v in sorted(reps.items())))
 
     # Fields that differ without being declared.
     between, within = [], []
@@ -156,7 +158,7 @@ def check_arms(
 
     for key, arm_values in between:
         rep.add(2, "warn", f"{key} differs between arms without being declared",
-                "; ".join(f"{a}: {', '.join(v)}" for a, v in sorted(arm_values.items())), key=key)
+                " | ".join(f"{a}: {', '.join(v)}" for a, v in sorted(arm_values.items())), key=key)
     for key, arm, vals in within:
         rep.add(2, "warn", f"{key} differs within arm '{arm}'", ", ".join(vals), key=key, arm=arm)
 
@@ -207,6 +209,7 @@ def check_data_orders(
                 ("Their launch seeds differ (" + ", ".join(f"{n}={_fmt(seeds.get(n, _MISSING))}" for n in sorted(names))
                  + "), so the seed did not reach at least one of them.") if seeds else
                 "If these runs are meant as different seeds, the seed did not reach them.",
+                tag=LOST_SEED if seeds else "",
                 fingerprint=fp,
             )
     by_seed: Dict[str, set] = defaultdict(set)
