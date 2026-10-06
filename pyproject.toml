@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "probe-the-harness"
+version = "0.1.0"
+description = "Setup checks for stale-data RL comparisons in language models"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [{name = "Taiheng Pan"}]
+keywords = ["reinforcement learning", "language models", "off-policy", "verl", "reproducibility"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = ["numpy>=1.21"]
+
+[project.optional-dependencies]
+torch = ["torch>=2.0"]
+yaml = ["pyyaml>=5.4"]
+all = ["torch>=2.0", "pyyaml>=5.4"]
+test = ["pytest>=7"]
+
+[project.scripts]
+pth = "pth.cli:main"
+
+[tool.setuptools]
+packages = ["pth"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

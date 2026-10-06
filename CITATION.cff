@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use PTH, please cite the technical report."
+title: "Probe the Harness (PTH)"
+authors:
+  - family-names: Pan
+    given-names: Taiheng
+license: MIT
+version: 0.1.0
+repository-code: "https://github.com/pth2002/probe-the-harness"
+preferred-citation:
+  type: article
+  title: "Probe the Harness: Setup Checks for Stale-Data RL Comparisons in Language Models"
+  authors:
+    - family-names: Pan
+      given-names: Taiheng
+  journal: "arXiv preprint arXiv:2610.02911"
+  year: 2026
+  url: "https://arxiv.org/abs/2610.02911"
+  doi: "10.48550/arXiv.2610.02911"
