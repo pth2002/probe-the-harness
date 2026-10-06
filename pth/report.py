@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List
 
 LEVELS = ("fail", "warn", "info")
+_LEVEL_COLORS = {"fail": "1;31", "warn": "33", "info": "36"}
 
 
 @dataclass
@@ -61,22 +62,29 @@ class Report:
         if not self.ok:
             raise HarnessCheckError(str(self))
 
-    def format(self, levels: Iterable[str] = LEVELS) -> str:
+    def format(self, levels: Iterable[str] = LEVELS, color: bool = False) -> str:
+        """Render the findings as text. ``color`` adds ANSI colours for terminals."""
         wanted = set(levels)
+
+        def paint(text: str, code: str) -> str:
+            return f"\x1b[{code}m{text}\x1b[0m" if color else text
+
         lines = []
         if self.subject:
-            lines.append(self.subject)
+            lines.append(paint(self.subject, "1"))
         order = {lvl: i for i, lvl in enumerate(LEVELS)}
         for f in sorted(self.findings, key=lambda f: (order[f.level], f.check)):
             if f.level not in wanted:
                 continue
-            lines.append(f"  [{f.level.upper():4}] check {f.check}: {f.title}")
+            tag = paint(f"[{f.level.upper():4}]", _LEVEL_COLORS[f.level])
+            lines.append(f"  {tag} check {f.check}: {f.title}")
             if f.detail:
                 for chunk in f.detail.splitlines():
-                    lines.append(f"         {chunk}")
+                    lines.append(paint(f"         {chunk}", "2"))
         if len(lines) == (1 if self.subject else 0):
             hidden = [f for f in self.findings if f.level not in wanted]
-            lines.append(f"  passed ({len(hidden)} info hidden)" if hidden else "  no findings")
+            done = f"passed ({len(hidden)} info hidden)" if hidden else "no findings"
+            lines.append("  " + paint(done, "32"))
         return "\n".join(lines)
 
     def __str__(self) -> str:

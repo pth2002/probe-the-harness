@@ -21,6 +21,27 @@ def _levels(args) -> Sequence[str]:
     return ("fail", "warn") if args.quiet else ("fail", "warn", "info")
 
 
+def _use_color() -> bool:
+    if not sys.stdout.isatty() or "NO_COLOR" in os.environ or os.environ.get("TERM") == "dumb":
+        return False
+    if os.name == "nt":  # enable ANSI escapes on the Windows console
+        try:
+            import ctypes
+            kernel32 = ctypes.windll.kernel32
+            handle = kernel32.GetStdHandle(-11)
+            mode = ctypes.c_uint32()
+            if not kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+                return False
+            return bool(kernel32.SetConsoleMode(handle, mode.value | 0x0004))
+        except Exception:
+            return False
+    return True
+
+
+def _show(rep: Report, args) -> None:
+    print(rep.format(_levels(args), color=_use_color()))
+
+
 def _cmd_verl(args) -> int:
     arms: Dict[str, str] = {}
     paths: List[str] = list(args.logs)
@@ -46,7 +67,7 @@ def _cmd_verl(args) -> int:
     for p in paths:
         rep = verl.check_log(p, kl_tol=args.kl_tol)
         rep.subject = f"{p}" + (f"  [arm {arms[p]}]" if p in arms else "")
-        print(rep.format(_levels(args)))
+        _show(rep, args)
         print()
         failed |= not rep.ok
 
@@ -63,7 +84,7 @@ def _cmd_verl(args) -> int:
                 configs[names[p]] = cfg
                 arm_of[names[p]] = arms[p]
         rep = check_arms(configs, arm_of, vary=args.vary, replicate=args.replicate)
-        print(rep.format(_levels(args)))
+        _show(rep, args)
         print()
         failed |= not rep.ok
     return 1 if failed else 0
@@ -82,14 +103,14 @@ def _read_ids(path: str, column: Optional[str]) -> List[str]:
 
 def _cmd_batches(args) -> int:
     rep = check_batch_ids(_read_ids(args.file, args.column), expect_unique=not args.allow_repeats)
-    print(rep.format(_levels(args)))
+    _show(rep, args)
     return 0 if rep.ok else 1
 
 
 def _cmd_paired(args) -> int:
     results = read_results_csv(args.file)
     rep = paired_differences(results, args.a, args.b, scale=args.scale)
-    print(rep.format(_levels(args)))
+    _show(rep, args)
     return 0 if rep.ok else 1
 
 
